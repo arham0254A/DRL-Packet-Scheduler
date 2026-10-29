@@ -1,0 +1,335 @@
+/* Palette: pale instrument-panel grey with slate ink. The three traffic
+   classes each own one color, used everywhere that class appears. */
+:root {
+    --paper: #e9ece6;
+    --panel: #f5f6f2;
+    --ink: #1f2a2e;
+    --ink-soft: #4d5a5e;
+    --rule: #b9c0b8;
+    --empty: #d3d8d0;
+
+    --c0: #c2362b; /* URLLC */
+    --c1: #2f5da8; /* eMBB */
+    --c2: #6f7d3a; /* Best effort */
+
+    --sans: "Atkinson Hyperlegible Next", "Segoe UI", system-ui, sans-serif;
+    --mono: "Atkinson Hyperlegible Mono", ui-monospace, Consolas, monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 28px clamp(16px, 4vw, 48px) 64px;
+    background: var(--paper);
+    color: var(--ink);
+    font: 16px/1.5 var(--sans);
+    font-variant-numeric: tabular-nums;
+}
+
+h1, h2, p { margin: 0; }
+
+h1 {
+    font-size: clamp(1.9rem, 4vw, 2.75rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+}
+
+h2 { font-size: 1.05rem; font-weight: 800; margin-bottom: 12px; }
+
+.visually-hidden {
+    position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+
+.caption { color: var(--ink-soft); font-size: 0.875rem; max-width: 62ch; margin-bottom: 12px; }
+
+:focus-visible { outline: 3px solid var(--c1); outline-offset: 2px; }
+
+/* ---------- Masthead ---------- */
+
+.masthead {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px 32px;
+    margin-bottom: 28px;
+}
+
+.lede { margin-top: 10px; max-width: 60ch; color: var(--ink-soft); }
+
+.status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+
+.status::before {
+    content: "";
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--ink);
+}
+
+.status[data-state="running"]::before { background: var(--c2); border-color: var(--c2); }
+.status[data-state="error"] { color: var(--c0); }
+.status[data-state="error"]::before { background: var(--c0); border-color: var(--c0); }
+
+/* ---------- Layout ---------- */
+
+main {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+        "schematic schematic schematic"
+        "controls  trace     trace"
+        "log       log       bench";
+    gap: 20px;
+}
+
+.schematic { grid-area: schematic; }
+.controls { grid-area: controls; }
+.trace { grid-area: trace; }
+.log { grid-area: log; }
+.bench { grid-area: bench; }
+
+.controls, .trace, .log, .bench {
+    background: var(--panel);
+    padding: 20px;
+    border-top: 3px solid var(--ink);
+}
+
+/* ---------- Schematic (the centerpiece) ---------- */
+
+.schematic {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) clamp(56px, 10vw, 140px) minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    background: var(--panel);
+    padding: 24px;
+    border: 2px solid var(--ink);
+}
+
+.buffers, .links {
+    display: grid;
+    grid-template-rows: repeat(3, 1fr);
+}
+
+.buffer, .link {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 10px 0;
+    min-height: 96px;
+}
+
+.link { padding-left: 14px; border-left: 2px solid var(--ink); }
+
+.row-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.row-head .name { font-weight: 800; font-size: 1.05rem; }
+.row-head .hint { color: var(--ink-soft); font-size: 0.85rem; }
+
+.buffer[data-class="0"] { --cls: var(--c0); }
+.buffer[data-class="1"] { --cls: var(--c1); }
+.buffer[data-class="2"] { --cls: var(--c2); }
+.buffer .name { color: var(--cls); }
+
+/* 40-slot buffer: one cell per packet slot, filled from the left (oldest first). */
+.cells {
+    display: grid;
+    grid-template-columns: repeat(40, 1fr);
+    gap: 2px;
+    margin: 8px 0 6px;
+    max-width: 520px;
+}
+
+.cells span {
+    aspect-ratio: 1 / 2.2;
+    background: var(--empty);
+}
+
+.cells span.on { background: var(--cls); }
+
+/* Packets older than the SLA get a dark diagonal hatch, readable without color. */
+.cells span.stale {
+    background:
+        repeating-linear-gradient(135deg, transparent 0 2px, rgb(0 0 0 / 0.45) 2px 3.5px),
+        var(--cls);
+}
+
+.readout { font-size: 0.875rem; color: var(--ink-soft); }
+.readout [data-field] { color: var(--ink); font-weight: 600; }
+
+.late, .blocked-note {
+    display: none;
+    margin-left: 6px;
+    padding: 0 6px;
+    font-weight: 600;
+    color: var(--panel);
+    background: var(--c0);
+}
+
+.buffer.is-late .late { display: inline-block; }
+.link.is-blocked .blocked-note { display: inline-block; background: var(--ink); }
+
+.wires { width: 100%; height: 100%; overflow: visible; }
+
+.wires path {
+    fill: none;
+    stroke: var(--rule);
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+}
+
+.wires path.on {
+    stroke: var(--ink);
+    stroke-width: 5;
+    transition: stroke-width 150ms;
+}
+
+.meter {
+    position: relative;
+    height: 14px;
+    margin: 8px 0 6px;
+    background: var(--empty);
+    max-width: 320px;
+}
+
+.meter-fill {
+    height: 100%;
+    width: 0;
+    background: var(--ink-soft);
+    transition: width 300ms ease-out;
+}
+
+.link.is-active .meter-fill { background: var(--ink); }
+.link.is-active .name::after { content: " (sending)"; font-weight: 400; color: var(--ink-soft); }
+
+.link.is-blocked .meter {
+    background: repeating-linear-gradient(135deg, var(--empty) 0 5px, var(--rule) 5px 7px);
+}
+
+.decision {
+    grid-column: 1 / -1;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--rule);
+    font-size: 1.05rem;
+}
+
+.decision strong { font-weight: 800; }
+
+/* ---------- Controls ---------- */
+
+.field { display: block; border: 0; padding: 0; margin: 0 0 20px; }
+.field > span, .field > legend { display: block; font-weight: 600; margin-bottom: 6px; padding: 0; }
+
+select, button {
+    font: inherit;
+    color: var(--ink);
+}
+
+select {
+    width: 100%;
+    padding: 8px 10px;
+    background: #fff;
+    border: 2px solid var(--ink);
+    border-radius: 4px;
+}
+
+.rate {
+    display: grid;
+    grid-template-columns: 84px 1fr 36px;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    font-size: 0.9rem;
+}
+
+.rate[data-class="0"] { accent-color: var(--c0); }
+.rate[data-class="1"] { accent-color: var(--c1); }
+.rate[data-class="2"] { accent-color: var(--c2); }
+.rate output { text-align: right; font-weight: 600; }
+.rate input { width: 100%; }
+
+.buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+
+button {
+    padding: 9px 12px;
+    background: transparent;
+    border: 2px solid var(--ink);
+    border-radius: 4px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+button:hover { background: var(--empty); }
+button:disabled { opacity: 0.5; cursor: progress; }
+
+button.primary { background: var(--ink); color: var(--panel); }
+button.primary:hover { background: var(--ink-soft); border-color: var(--ink-soft); }
+
+button[aria-pressed="true"] {
+    background: repeating-linear-gradient(135deg, var(--panel) 0 5px, var(--empty) 5px 8px);
+}
+
+/* ---------- Trace ---------- */
+
+.chart-box { position: relative; height: 260px; }
+
+/* ---------- Log ---------- */
+
+.log-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 280px;
+    overflow-y: auto;
+    font: 0.85rem/1.6 var(--mono);
+}
+
+.log-list li { display: grid; grid-template-columns: 4.5ch 1fr auto; gap: 10px; padding: 2px 0; }
+.log-list li:first-child { font-weight: 600; }
+.log-list .slot { color: var(--ink-soft); text-align: right; }
+.log-list .neg { color: var(--c0); }
+.log-list:empty::before { content: "No decisions yet."; color: var(--ink-soft); font-family: var(--sans); }
+
+/* ---------- Benchmark ---------- */
+
+.table-wrap { overflow-x: auto; margin-top: 14px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+table + table { margin-top: 20px; }
+caption { text-align: left; font-weight: 800; padding-bottom: 6px; }
+
+th, td { padding: 6px 10px 6px 0; text-align: right; }
+th:first-child, td:first-child { text-align: left; }
+thead th { font-weight: 600; color: var(--ink-soft); border-bottom: 2px solid var(--ink); }
+tbody tr + tr td { border-top: 1px solid var(--rule); }
+td.best { font-weight: 800; }
+
+/* ---------- Small screens ---------- */
+
+@media (max-width: 1000px) {
+    main {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "schematic" "controls" "trace" "log" "bench";
+    }
+}
+
+@media (max-width: 640px) {
+    /* The wiring needs horizontal room, so stack buffers above links instead. */
+    .schematic { grid-template-columns: minmax(0, 1fr); padding: 16px; }
+    .wires { display: none; }
+    .links { margin-top: 12px; border-top: 2px solid var(--ink); }
+    .link { border-left: 0; padding-left: 0; }
+    .cells { grid-template-columns: repeat(20, 1fr); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+}
